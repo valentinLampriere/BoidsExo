@@ -6,11 +6,17 @@ using UnityEngine;
 public class Boid : MonoBehaviour {
     private float angle;
     private float speed;
+    private float visionDistance
 
     private Vector3 velocity;
     private Rect space;
 
     Rigidbody2D rb;
+
+    public void Init(Rect space, float visionDistance) {
+        this.space = space;
+        this.visionDistance = visionDistance;
+    }
 
     public void Start() {
         float xMin = space.x;
@@ -22,10 +28,6 @@ public class Boid : MonoBehaviour {
         gameObject.transform.position = new Vector2(Random.Range(xMin, xMax), Random.Range(yMin, yMax));
         velocity = new Vector2(Random.Range(-0.5f, 0.5f), Random.Range(-0.5f, 0.5f));
         speed = Random.Range(3f, 5f);
-    }
-
-    public void SetSpace(Rect s) {
-        space = s;
     }
 
     private bool isVectorInSpace(Vector3 newPos) {
@@ -53,8 +55,18 @@ public class Boid : MonoBehaviour {
 
     public void FixedUpdate() {
         Vector3 newPos = gameObject.transform.position + velocity * speed * Time.deltaTime;
+        List<Boid> closeBoids = new List<Boid>();
         if (!isVectorInSpace(newPos)) {
             newPos = appearOppositeSide(newPos);
+        }
+        foreach (GameObject objBoid in GameObject.FindGameObjectsWithTag("Boid")) {
+            Boid b = objBoid.GetComponent<Boid>();
+            if (b != null && objBoid != this) {
+                float dist = Vector3.Distance(objBoid.transform.position, rb.position);
+                if (dist <= visionDistance) {
+                    closeBoids.Add(b);
+                }
+            }
         }
         rb.MovePosition(newPos);
     }

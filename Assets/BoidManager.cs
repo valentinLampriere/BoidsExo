@@ -7,6 +7,7 @@ public class BoidManager : MonoBehaviour
     public float widthOfArea = 20;
     public float heightOfArea = 10;
     public int amountOfBoids = 10;
+    public float boidVisionDistance = 20f;
 
     public GameObject boid;
 
@@ -18,7 +19,7 @@ public class BoidManager : MonoBehaviour
             GameObject objBoid = Instantiate(boid);
             Boid b = objBoid.GetComponent<Boid>();
             if (b != null)
-                b.SetSpace(space);
+                b.Init(space, boidVisionDistance) ;
         }
     }
 }
