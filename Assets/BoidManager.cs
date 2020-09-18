@@ -8,6 +8,7 @@ public class BoidManager : MonoBehaviour
     public float heightOfArea = 10;
     public int amountOfBoids = 10;
     public float boidVisionDistance = 5f;
+    public float boidMinimumDistance = 2f;
     public float boidSpeed = 1f;
 
     public GameObject boid;
@@ -20,7 +21,7 @@ public class BoidManager : MonoBehaviour
             GameObject objBoid = Instantiate(boid);
             Boid b = objBoid.GetComponent<Boid>();
             if (b != null)
-                b.Init(space, boidSpeed, boidVisionDistance);
+                b.Init(space, boidSpeed, boidVisionDistance, boidMinimumDistance);
             else
                 Destroy(objBoid);
         }
