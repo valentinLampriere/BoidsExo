@@ -307,4 +307,6 @@ MonoBehaviour:
   widthOfArea: 20
   heightOfArea: 10
   amountOfBoids: 10
+  boidVisionDistance: 4
+  boidSpeed: 1
   boid: {fileID: 7349047827129000917, guid: 3ef3c31d557982d4198fb72b7ccc80e0, type: 3}
