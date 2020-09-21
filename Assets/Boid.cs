@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.VFX;
 
 public class Boid : MonoBehaviour {
 
     public BoidManager manager;
 
-    private Vector3 velocity;
+    public Vector3 velocity;
 
     Rigidbody2D rb;
 
@@ -42,22 +43,18 @@ public class Boid : MonoBehaviour {
         avgX /= closeBoids.Count;
         avgY /= closeBoids.Count;
 
-        velocity.x -= (avgX / 10);
-        velocity.y -= (avgY / 10);
+        velocity.x -= (avgX / 10f);
+        velocity.y -= (avgY / 10f);
     }
     private void MoveWith(List<Boid> closeBoids) {
-        float avgX = 0;
-        float avgY = 0;
+        Vector3 sum = new Vector3();
         if (closeBoids.Count == 0) return;
         foreach (Boid b in closeBoids) {
-            avgX += b.velocity.x;
-            avgY += b.velocity.y;
+            sum += b.velocity;
         }
-        avgX /= closeBoids.Count;
-        avgY /= closeBoids.Count;
+        sum /= closeBoids.Count;
 
-        velocity.x += (avgX / 40);
-        velocity.y += (avgY / 40);
+        velocity += sum.normalized / 20;
     }
     private void MoveAway(List<Boid> closeBoids) {
         float distanceX = 0;
@@ -85,32 +82,35 @@ public class Boid : MonoBehaviour {
             }
         }
         if (numClose == 0) return;
-        velocity.x += distanceX / 5;
-        velocity.y += distanceY / 5;
+        velocity.x += distanceX / 5f;
+        velocity.y += distanceY / 5f;
     }
 
-    public void FixedUpdate() {
-        Vector3 newPos = gameObject.transform.position + velocity * manager.boidSpeed * Time.deltaTime;
+    private List<Boid> getCloseBoids() {
         List<Boid> closeBoids = new List<Boid>();
 
         foreach (GameObject objBoid in GameObject.FindGameObjectsWithTag("Boid")) {
             Boid b = objBoid.GetComponent<Boid>();
             if (b != null && objBoid != gameObject) {
                 float dist = Vector3.Distance(objBoid.transform.position, rb.position);
-                if (dist <= manager.boidVisionDistance) {
+                if (dist <= manager.boidVisionDistance) { // If a boid is close enough
                     closeBoids.Add(b);
                 }
             }
         }
+        return closeBoids;
+    }
+
+    public void FixedUpdate() {
+        Vector3 newPos = gameObject.transform.position + velocity * manager.boidSpeed * Time.deltaTime;
+        List<Boid> closeBoids = getCloseBoids();
 
         MoveCloser(closeBoids);
         MoveWith(closeBoids);
         MoveAway(closeBoids);
 
         float xMin = -manager.widthOfArea / 2;
-        float xMax = manager.widthOfArea / 2;
         float yMin = -manager.heightOfArea / 2;
-        float yMax = manager.heightOfArea / 2;
 
         float border = manager.widthOfArea / 30;
         if (newPos.x < xMin + border && velocity.x < 0 || newPos.x > xMin + manager.widthOfArea - border && velocity.x > 0) {
