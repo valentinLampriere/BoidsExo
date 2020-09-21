@@ -32,6 +32,7 @@ public class Boid : MonoBehaviour {
     private void MoveCloser(List<Boid> closeBoids) {
         float avgX = 0;
         float avgY = 0;
+        if (closeBoids.Count == 0) return;
         foreach (Boid b in closeBoids) {
             Rigidbody2D b_rb = b.GetComponent<Rigidbody2D>();
             if (b == this || b_rb == null) continue;
@@ -47,6 +48,7 @@ public class Boid : MonoBehaviour {
     private void MoveWith(List<Boid> closeBoids) {
         float avgX = 0;
         float avgY = 0;
+        if (closeBoids.Count == 0) return;
         foreach (Boid b in closeBoids) {
             avgX += b.velocity.x;
             avgY += b.velocity.y;
@@ -61,7 +63,8 @@ public class Boid : MonoBehaviour {
         float distanceX = 0;
         float distanceY = 0;
         int numClose = 0;
-        foreach(Boid b in closeBoids) {
+        if (closeBoids.Count == 0) return;
+        foreach (Boid b in closeBoids) {
             Rigidbody2D b_rb = b.GetComponent<Rigidbody2D>();
             if (b == this || b_rb == null) continue;
             float distance = Vector3.Distance(rb.position, b_rb.position);
@@ -79,11 +82,11 @@ public class Boid : MonoBehaviour {
                     yDiff = -Mathf.Sqrt(manager.boidMinimumDistance) - yDiff;
                 distanceX += xDiff;
                 distanceY += yDiff;
-                if (numClose == 0) continue;
-                velocity.x -= distanceX / 5;
-                velocity.y -= distanceY / 5;
             }
         }
+        if (numClose == 0) return;
+        velocity.x += distanceX / 5;
+        velocity.y += distanceY / 5;
     }
 
     public void FixedUpdate() {
@@ -92,7 +95,7 @@ public class Boid : MonoBehaviour {
 
         foreach (GameObject objBoid in GameObject.FindGameObjectsWithTag("Boid")) {
             Boid b = objBoid.GetComponent<Boid>();
-            if (b != null && objBoid != this) {
+            if (b != null && objBoid != gameObject) {
                 float dist = Vector3.Distance(objBoid.transform.position, rb.position);
                 if (dist <= manager.boidVisionDistance) {
                     closeBoids.Add(b);

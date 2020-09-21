@@ -4,27 +4,30 @@ using UnityEngine;
 
 public class BoidManager : MonoBehaviour
 {
+    [Range(5f, 20f)]
     public float widthOfArea = 20;
+    [Range(3.3f, 10f)]
     public float heightOfArea = 10;
+    [Range(1, 30)]
     public int amountOfBoids = 10;
+    [Range(1f, 5f)]
     public float boidVisionDistance = 5f;
+    [Range(0f, 3f)]
     public float boidMinimumDistance = 2f;
+    [Range(0.0f, 3.0f)]
     public float boidSpeed = 1f;
-
-    //public Rect space = new Rect(-10, -5, 20, 10);
 
     public GameObject boid;
 
     // Start is called before the first frame update
     void Start() {
         Vector3 position = gameObject.transform.position;
-        //space = new Rect(position.x - widthOfArea / 2, position.y - heightOfArea / 2, widthOfArea, heightOfArea);
         for (int i = 0; i < amountOfBoids; i++) {
             GameObject objBoid = Instantiate(boid);
             Boid b = objBoid.GetComponent<Boid>();
+            objBoid.name = i.ToString();
             if (b != null)
                 b.manager = this;
-            //b.Init(space, boidSpeed, boidVisionDistance, boidMinimumDistance);
             else
                 Destroy(objBoid);
         }
