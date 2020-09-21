@@ -11,17 +11,20 @@ public class BoidManager : MonoBehaviour
     public float boidMinimumDistance = 2f;
     public float boidSpeed = 1f;
 
+    //public Rect space = new Rect(-10, -5, 20, 10);
+
     public GameObject boid;
 
     // Start is called before the first frame update
     void Start() {
         Vector3 position = gameObject.transform.position;
-        Rect space = new Rect(position.x - widthOfArea / 2, position.y - heightOfArea / 2, widthOfArea, heightOfArea);
+        //space = new Rect(position.x - widthOfArea / 2, position.y - heightOfArea / 2, widthOfArea, heightOfArea);
         for (int i = 0; i < amountOfBoids; i++) {
             GameObject objBoid = Instantiate(boid);
             Boid b = objBoid.GetComponent<Boid>();
             if (b != null)
-                b.Init(space, boidSpeed, boidVisionDistance, boidMinimumDistance);
+                b.manager = this;
+            //b.Init(space, boidSpeed, boidVisionDistance, boidMinimumDistance);
             else
                 Destroy(objBoid);
         }
