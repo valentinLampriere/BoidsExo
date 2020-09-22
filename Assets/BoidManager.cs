@@ -80,13 +80,14 @@ public class BoidManager : MonoBehaviour {
 
     void Update() {
         foreach(Boid boid in allBoids) {
-            List<Transform> closeBoids = new List<Transform>();
-            foreach (Boid _boid in allBoids) {
+            //List<Transform> closeBoids = new List<Transform>();
+            List<Transform> closeBoids = GetCloseObjects(boid);
+            /*foreach (Boid _boid in allBoids) {
                 if (boid == _boid) continue;
                 float distance = Vector3.Distance(boid.transform.position, _boid.transform.position);
                 if (distance < boidVisionDistance)
                     closeBoids.Add(_boid.transform);
-            }
+            }*/
 
             Vector3 cohesionVelocity = moveCohesion(boid, closeBoids);
             Vector3 separationVelocity = moveSeparation(boid, closeBoids);
@@ -94,10 +95,10 @@ public class BoidManager : MonoBehaviour {
 
             Vector3 moveVelocity = (boid.transform.up * 10 + cohesionVelocity + alignementVelocity + separationVelocity).normalized;
             
-
             boid.Move(moveVelocity, boidSpeed);
         }
     }
+
     List<Transform> GetCloseObjects(Boid boid) {
         List<Transform> context = new List<Transform>();
         Collider2D[] contextColliders = Physics2D.OverlapCircleAll(boid.transform.position, boidVisionDistance);
