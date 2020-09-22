@@ -6,19 +6,13 @@ using UnityEngine.VFX;
 
 public class Boid : MonoBehaviour {
 
-    public BoidManager manager;
-
-    public Vector3 velocity;
-
-    Rigidbody2D rb;
-
     /*public void Init(Rect space, float speed, float visionDistance, float minDistance) {
         this.space = space;
         this.speed = speed;
         this.visionDistance = visionDistance;
         this.minDistance = minDistance;
     }*/
-
+    /*
     public void Start() {
         float xMin = -manager.widthOfArea / 2;
         float xMax = manager.widthOfArea / 2;
@@ -26,7 +20,7 @@ public class Boid : MonoBehaviour {
         float yMax = manager.heightOfArea / 2;
 
         rb = gameObject.GetComponent<Rigidbody2D>();
-        gameObject.transform.position = new Vector2(Random.Range(xMin, xMax), Random.Range(yMin, yMax));
+        //gameObject.transform.position = new Vector2(Random.Range(xMin, xMax), Random.Range(yMin, yMax));
         velocity = new Vector2(Random.Range(-0.5f, 0.5f), Random.Range(-0.5f, 0.5f));
     }
 
@@ -120,7 +114,15 @@ public class Boid : MonoBehaviour {
             velocity.y = -velocity.y * Random.Range(0, 1f);
             newPos = gameObject.transform.position + velocity * manager.boidSpeed * Time.deltaTime;
         }
-        
+
         rb.MovePosition(newPos);
+    }*/
+
+    public void Start() {
+    }
+
+    public void Move(Vector3 velocity) {
+        transform.up = velocity;
+        transform.position += velocity * Time.deltaTime;
     }
 }

@@ -2,8 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class BoidManager : MonoBehaviour
-{
+public class BoidManager : MonoBehaviour {
     [Header("Field settings")]
     [Range(5f, 20f)]
     public float widthOfArea = 20;
@@ -24,17 +23,41 @@ public class BoidManager : MonoBehaviour
 
     public GameObject boid;
 
+    List<Boid> allBoids = new List<Boid>();
+
     // Start is called before the first frame update
     void Start() {
         Vector3 position = gameObject.transform.position;
         for (int i = 0; i < amountOfBoids; i++) {
-            GameObject objBoid = Instantiate(boid);
+            // Spawn a boid
+            GameObject objBoid = Instantiate(boid, Random.insideUnitCircle * Mathf.Min(widthOfArea, heightOfArea) * 0.4f, Quaternion.Euler(Vector3.forward * Random.Range(0f, 360f)), transform);
             Boid b = objBoid.GetComponent<Boid>();
-            objBoid.name = i.ToString();
-            if (b != null)
-                b.manager = this;
-            else
-                Destroy(objBoid);
+            objBoid.name = "Boid " + i;
+            if (b != null) {
+                allBoids.Add(b);
+            }
         }
+    }
+
+    void Update() {
+        foreach(Boid boid in allBoids) {
+            //List<Transform> closeObjects = getCloseObject(boid.transform);
+
+            foreach(Transform b in getCloseObjects(boid.transform))
+
+            boid.Move(boid.transform.up);
+        }
+    }
+
+    List<Transform> getCloseObjects(Transform origin) {
+        List<Transform> objects = new List<Transform>();
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(origin.position, boidVisionDistance);
+
+        foreach(Collider2D c in colliders) {
+            if (c.transform != origin) {
+                objects.Add(c.transform);
+            }
+        }
+        return objects;
     }
 }
