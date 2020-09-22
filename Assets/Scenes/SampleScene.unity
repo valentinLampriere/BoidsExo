@@ -250,8 +250,8 @@ MonoBehaviour:
   widthOfArea: 20
   heightOfArea: 10
   amountOfBoids: 100
-  boidVisionDistance: 3.41
-  boidMinimumDistance: 1
+  boidVisionDistance: 2.19
+  boidMinimumDistance: 0.6
   boidVisionAngle: 2
   boidSpeed: 0.56
   boid: {fileID: 3920269279056475266, guid: 212b7ba58cb88cf4896017060a310807, type: 3}

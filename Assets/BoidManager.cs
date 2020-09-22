@@ -18,8 +18,8 @@ public class BoidManager : MonoBehaviour {
     public float boidMinimumDistance = 2f;
 
     public float boidVisionAngle = 2f;
-    [Range(0.1f, 3.0f)]
-    public float boidSpeed = 1f;
+    [Range(0f, 2.0f)]
+    public float boidSpeed = 0.5f;
 
     public GameObject boid;
 
@@ -39,25 +39,73 @@ public class BoidManager : MonoBehaviour {
         }
     }
 
-    void Update() {
-        foreach(Boid boid in allBoids) {
-            //List<Transform> closeObjects = getCloseObject(boid.transform);
-
-            foreach(Transform b in getCloseObjects(boid.transform))
-
-            boid.Move(boid.transform.up);
+    Vector3 moveCohesion(Boid boid, List<Transform> closeBoids) {
+        Vector3 cohesionVelocity = Vector3.zero;
+        if (closeBoids.Count == 0) return cohesionVelocity;
+        foreach (Transform _boid in closeBoids) {
+            cohesionVelocity += _boid.position;
         }
+        cohesionVelocity /= closeBoids.Count;
+        cohesionVelocity -= boid.transform.position;
+        return cohesionVelocity;
     }
 
-    List<Transform> getCloseObjects(Transform origin) {
-        List<Transform> objects = new List<Transform>();
-        Collider2D[] colliders = Physics2D.OverlapCircleAll(origin.position, boidVisionDistance);
-
-        foreach(Collider2D c in colliders) {
-            if (c.transform != origin) {
-                objects.Add(c.transform);
+    Vector3 moveSeparation(Boid boid, List<Transform> closeBoids) {
+        Vector3 separationVelocity = Vector3.zero;
+        int numClose = 0;
+        if (closeBoids.Count == 0) return separationVelocity;
+        foreach (Transform _boid in closeBoids) {
+            float distance = Vector3.Distance(boid.transform.position, _boid.position);
+            if (distance <= boidMinimumDistance) {
+                separationVelocity += boid.transform.position - _boid.position;
+                numClose++;
             }
         }
-        return objects;
+        if (numClose > 0) {
+            separationVelocity /= numClose;
+        }
+        return separationVelocity;
+    }
+
+    Vector3 moveAlignement(Boid boid, List<Transform> closeBoids) {
+        Vector3 alignementVelocity = Vector3.zero;
+        if (closeBoids.Count == 0) return alignementVelocity;
+        foreach (Transform _boid in closeBoids) {
+            alignementVelocity += _boid.position;
+        }
+        alignementVelocity /= closeBoids.Count;
+
+        return alignementVelocity;
+    }
+
+    void Update() {
+        foreach(Boid boid in allBoids) {
+            List<Transform> closeBoids = new List<Transform>();
+            foreach (Boid _boid in allBoids) {
+                if (boid == _boid) continue;
+                float distance = Vector3.Distance(boid.transform.position, _boid.transform.position);
+                if (distance < boidVisionDistance)
+                    closeBoids.Add(_boid.transform);
+            }
+
+            Vector3 cohesionVelocity = moveCohesion(boid, closeBoids);
+            Vector3 separationVelocity = moveSeparation(boid, closeBoids);
+            Vector3 alignementVelocity = moveAlignement(boid, closeBoids);
+
+            Vector3 moveVelocity = (boid.transform.up * 10 + cohesionVelocity + alignementVelocity + separationVelocity).normalized;
+            
+
+            boid.Move(moveVelocity, boidSpeed);
+        }
+    }
+    List<Transform> GetCloseObjects(Boid boid) {
+        List<Transform> context = new List<Transform>();
+        Collider2D[] contextColliders = Physics2D.OverlapCircleAll(boid.transform.position, boidVisionDistance);
+        foreach (Collider2D c in contextColliders) {
+            if (c != boid.boidCollider) {
+                context.Add(c.transform);
+            }
+        }
+        return context;
     }
 }

@@ -118,11 +118,14 @@ public class Boid : MonoBehaviour {
         rb.MovePosition(newPos);
     }*/
 
+    public Collider2D boidCollider;
+
     public void Start() {
+        boidCollider = GetComponent<Collider2D>();
     }
 
-    public void Move(Vector3 velocity) {
+    public void Move(Vector3 velocity, float speed) {
         transform.up = velocity;
-        transform.position += velocity * Time.deltaTime;
+        transform.position += velocity * Time.deltaTime * speed;
     }
 }
