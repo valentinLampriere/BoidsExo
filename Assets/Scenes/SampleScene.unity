@@ -249,10 +249,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   widthOfArea: 20
   heightOfArea: 10
-  amountOfBoids: 5
-  boidVisionDistance: 1
-  boidMinimumDistance: 0.6
-  boidVisionAngle: 2
-  boidSpeed: 1.47
+  amountOfBoids: 200
+  boidVisionDistance: 1.75
+  boidMinimumDistance: 0.33
+  goThroughtWalls: 0
+  cohesionStrength: 0.1
+  separationStrength: 0.2
+  alignementStrength: 0.02
+  boidSpeed: 1.87
   boid_gameObject: {fileID: 3920269279056475266, guid: 212b7ba58cb88cf4896017060a310807,
     type: 3}

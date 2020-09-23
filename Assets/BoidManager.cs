@@ -8,16 +8,24 @@ public class BoidManager : MonoBehaviour {
     public float widthOfArea = 20;
     [Range(3.3f, 10f)]
     public float heightOfArea = 10;
-    [Range(1, 100)]
+    [Range(1, 250)]
     public int amountOfBoids = 10;
     [Space]
     [Header("Boids settings")]
     [Range(1f, 5f)]
     public float boidVisionDistance = 5f;
-    [Range(0f, 3f)]
-    public float boidMinimumDistance = 2f;
+    [Range(0.2f, 1f)]
+    public float boidMinimumDistance = 0.4f;
 
-    public float boidVisionAngle = 2f;
+    [Space]
+    [Header("Boids stats")]
+    public bool goThroughtWalls = false;
+    [Range(0f, 1f)]
+    public float cohesionStrength = 0.1f;
+    [Range(0f, 1f)]
+    public float separationStrength = 0.8f;
+    [Range(0f, 0.5f)]
+    public float alignementStrength = 0.1f;
     [Range(0.01f, 5.0f)]
     public float boidSpeed = 0.5f;
 
@@ -27,10 +35,9 @@ public class BoidManager : MonoBehaviour {
 
     // Start is called before the first frame update
     void Start() {
-        Vector3 position = gameObject.transform.position;
         for (int i = 0; i < amountOfBoids; i++) {
             // Spawn a boid
-            GameObject objBoid = Instantiate(boid_gameObject, Random.insideUnitCircle * Mathf.Min(widthOfArea, heightOfArea) * 0.4f, Quaternion.Euler(Vector3.forward * Random.Range(0f, 360f)), transform);
+            GameObject objBoid = Instantiate(boid_gameObject, Random.insideUnitCircle * Mathf.Min(widthOfArea, heightOfArea) * 0.5f, Quaternion.Euler(Vector3.forward * Random.Range(0f, 360f)), transform);
             Boid b = objBoid.GetComponent<Boid>();
             objBoid.name = "Boid " + i;
             if (b != null) {
@@ -47,7 +54,7 @@ public class BoidManager : MonoBehaviour {
         }
         cohesionVelocity /= closeBoids.Count;
         cohesionVelocity -= boid.transform.position;
-        return cohesionVelocity * 0.1f;
+        return cohesionVelocity * cohesionStrength;
     }
 
     Vector3 MoveSeparation(Boid boid, List<Transform> closeBoids) {
@@ -64,18 +71,18 @@ public class BoidManager : MonoBehaviour {
         if (numClose > 0) {
             separationVelocity /= numClose;
         }
-        return separationVelocity;
+        return separationVelocity * separationStrength;
     }
 
     Vector3 MoveAlignement(Boid boid, List<Transform> closeBoids) {
         Vector3 alignementVelocity = Vector3.zero;
         if (closeBoids.Count == 0) return alignementVelocity;
         foreach (Transform _boid in closeBoids) {
-            alignementVelocity += _boid.position;
+            alignementVelocity += _boid.up;
         }
         alignementVelocity /= closeBoids.Count;
 
-        return alignementVelocity * 0.2f;
+        return alignementVelocity * alignementStrength;
     }
 
     void Update() {
@@ -93,19 +100,32 @@ public class BoidManager : MonoBehaviour {
     }
 
     Vector3 mergeVelocities(Vector3 boidDirection, Vector3 cohesionVelocity, Vector3 alignementVelocity, Vector3 separationVelocity) {
-        return (boidDirection * 10f + cohesionVelocity + alignementVelocity + separationVelocity).normalized;
-        
+        Vector3 direction = (boidDirection * 10f + cohesionVelocity + alignementVelocity + separationVelocity).normalized;
+        return direction;
     }
 
     Vector3 manageVelocity(Boid boid, Vector3 moveDirection) {
         float borderW = widthOfArea / 30;
         float borderH = widthOfArea / 30;
         Vector3 newVelocity = boid.calcVelocity(moveDirection, boidSpeed);
-        if (newVelocity.x < 0 && boid.transform.position.x + newVelocity.x < -widthOfArea / 2 + borderW || newVelocity.x > 0 && boid.transform.position.x + newVelocity.x > widthOfArea / 2 - borderW) {
-            newVelocity.x = -newVelocity.x;
-        }
-        if (newVelocity.y < 0 && boid.transform.position.y + newVelocity.y < -heightOfArea / 2 + borderH || newVelocity.y > 0 && boid.transform.position.y + newVelocity.y > heightOfArea / 2 - borderH) {
-            newVelocity.y = -newVelocity.y;
+        if (!goThroughtWalls) {
+            if (newVelocity.x < 0 && boid.transform.position.x + newVelocity.x < -widthOfArea / 2 + borderW || newVelocity.x > 0 && boid.transform.position.x + newVelocity.x > widthOfArea / 2 - borderW) {
+                newVelocity.x = -newVelocity.x;
+            }
+            if (newVelocity.y < 0 && boid.transform.position.y + newVelocity.y < -heightOfArea / 2 + borderH || newVelocity.y > 0 && boid.transform.position.y + newVelocity.y > heightOfArea / 2 - borderH) {
+                newVelocity.y = -newVelocity.y;
+            }
+        } else {
+            if (newVelocity.x < 0 && boid.transform.position.x + newVelocity.x < -widthOfArea / 2 + borderW) {
+                boid.transform.position = new Vector3(widthOfArea / 2 - borderW, boid.transform.position.y);
+            } else if (newVelocity.x > 0 && boid.transform.position.x + newVelocity.x > widthOfArea / 2 - borderW) {
+                boid.transform.position = new Vector3(-widthOfArea / 2 + borderW, boid.transform.position.y);
+            }
+            if (newVelocity.y < 0 && boid.transform.position.y + newVelocity.y < -heightOfArea / 2 + borderH) {
+                boid.transform.position = new Vector3(boid.transform.position.x, heightOfArea / 2 - borderH);
+            } else if (newVelocity.y > 0 && boid.transform.position.y + newVelocity.y > heightOfArea / 2 - borderH) {
+                boid.transform.position = new Vector3(boid.transform.position.x, -heightOfArea / 2 + borderH);
+            }
         }
         return newVelocity;
     }
