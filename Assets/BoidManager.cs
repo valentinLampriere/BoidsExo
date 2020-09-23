@@ -21,7 +21,7 @@ public class BoidManager : MonoBehaviour {
     [Range(0.01f, 5.0f)]
     public float boidSpeed = 0.5f;
 
-    public GameObject boid;
+    public GameObject boid_gameObject;
 
     List<Boid> allBoids = new List<Boid>();
 
@@ -30,7 +30,7 @@ public class BoidManager : MonoBehaviour {
         Vector3 position = gameObject.transform.position;
         for (int i = 0; i < amountOfBoids; i++) {
             // Spawn a boid
-            GameObject objBoid = Instantiate(boid, Random.insideUnitCircle * Mathf.Min(widthOfArea, heightOfArea) * 0.4f, Quaternion.Euler(Vector3.forward * Random.Range(0f, 360f)), transform);
+            GameObject objBoid = Instantiate(boid_gameObject, Random.insideUnitCircle * Mathf.Min(widthOfArea, heightOfArea) * 0.4f, Quaternion.Euler(Vector3.forward * Random.Range(0f, 360f)), transform);
             Boid b = objBoid.GetComponent<Boid>();
             objBoid.name = "Boid " + i;
             if (b != null) {
@@ -39,7 +39,7 @@ public class BoidManager : MonoBehaviour {
         }
     }
 
-    Vector3 moveCohesion(Boid boid, List<Transform> closeBoids) {
+    Vector3 MoveCohesion(Boid boid, List<Transform> closeBoids) {
         Vector3 cohesionVelocity = Vector3.zero;
         if (closeBoids.Count == 0) return cohesionVelocity;
         foreach (Transform _boid in closeBoids) {
@@ -47,10 +47,10 @@ public class BoidManager : MonoBehaviour {
         }
         cohesionVelocity /= closeBoids.Count;
         cohesionVelocity -= boid.transform.position;
-        return cohesionVelocity;
+        return cohesionVelocity * 0.1f;
     }
 
-    Vector3 moveSeparation(Boid boid, List<Transform> closeBoids) {
+    Vector3 MoveSeparation(Boid boid, List<Transform> closeBoids) {
         Vector3 separationVelocity = Vector3.zero;
         int numClose = 0;
         if (closeBoids.Count == 0) return separationVelocity;
@@ -67,7 +67,7 @@ public class BoidManager : MonoBehaviour {
         return separationVelocity;
     }
 
-    Vector3 moveAlignement(Boid boid, List<Transform> closeBoids) {
+    Vector3 MoveAlignement(Boid boid, List<Transform> closeBoids) {
         Vector3 alignementVelocity = Vector3.zero;
         if (closeBoids.Count == 0) return alignementVelocity;
         foreach (Transform _boid in closeBoids) {
@@ -75,28 +75,26 @@ public class BoidManager : MonoBehaviour {
         }
         alignementVelocity /= closeBoids.Count;
 
-        return alignementVelocity * 0.5f;
+        return alignementVelocity * 0.2f;
     }
 
     void Update() {
         foreach(Boid boid in allBoids) {
-            //List<Transform> closeBoids = new List<Transform>();
             List<Transform> closeBoids = GetCloseObjects(boid);
-            /*foreach (Boid _boid in allBoids) {
-                if (boid == _boid) continue;
-                float distance = Vector3.Distance(boid.transform.position, _boid.transform.position);
-                if (distance < boidVisionDistance)
-                    closeBoids.Add(_boid.transform);
-            }*/
 
-            Vector3 cohesionVelocity = moveCohesion(boid, closeBoids);
-            Vector3 alignementVelocity = moveAlignement(boid, closeBoids);
-            Vector3 separationVelocity = moveSeparation(boid, closeBoids);
+            Vector3 cohesionVelocity = MoveCohesion(boid, closeBoids);
+            Vector3 alignementVelocity = MoveAlignement(boid, closeBoids);
+            Vector3 separationVelocity = MoveSeparation(boid, closeBoids);
 
-            Vector3 moveDirection = (boid.transform.up * 10f + cohesionVelocity + alignementVelocity + separationVelocity).normalized;
+            Vector3 moveDirection = mergeVelocities(boid.transform.up, cohesionVelocity, alignementVelocity, separationVelocity);
             
             boid.Move(manageVelocity(boid, moveDirection));
         }
+    }
+
+    Vector3 mergeVelocities(Vector3 boidDirection, Vector3 cohesionVelocity, Vector3 alignementVelocity, Vector3 separationVelocity) {
+        return (boidDirection * 10f + cohesionVelocity + alignementVelocity + separationVelocity).normalized;
+        
     }
 
     Vector3 manageVelocity(Boid boid, Vector3 moveDirection) {
