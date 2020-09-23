@@ -253,5 +253,5 @@ MonoBehaviour:
   boidVisionDistance: 2.19
   boidMinimumDistance: 0.6
   boidVisionAngle: 2
-  boidSpeed: 0.56
+  boidSpeed: 1.47
   boid: {fileID: 3920269279056475266, guid: 212b7ba58cb88cf4896017060a310807, type: 3}

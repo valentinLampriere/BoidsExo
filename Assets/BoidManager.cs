@@ -18,7 +18,7 @@ public class BoidManager : MonoBehaviour {
     public float boidMinimumDistance = 2f;
 
     public float boidVisionAngle = 2f;
-    [Range(0f, 2.0f)]
+    [Range(0.01f, 5.0f)]
     public float boidSpeed = 0.5f;
 
     public GameObject boid;
@@ -75,7 +75,7 @@ public class BoidManager : MonoBehaviour {
         }
         alignementVelocity /= closeBoids.Count;
 
-        return alignementVelocity;
+        return alignementVelocity * 0.5f;
     }
 
     void Update() {
@@ -90,13 +90,26 @@ public class BoidManager : MonoBehaviour {
             }*/
 
             Vector3 cohesionVelocity = moveCohesion(boid, closeBoids);
-            Vector3 separationVelocity = moveSeparation(boid, closeBoids);
             Vector3 alignementVelocity = moveAlignement(boid, closeBoids);
+            Vector3 separationVelocity = moveSeparation(boid, closeBoids);
 
-            Vector3 moveVelocity = (boid.transform.up * 10 + cohesionVelocity + alignementVelocity + separationVelocity).normalized;
+            Vector3 moveDirection = (boid.transform.up * 10f + cohesionVelocity + alignementVelocity + separationVelocity).normalized;
             
-            boid.Move(moveVelocity, boidSpeed);
+            boid.Move(manageVelocity(boid, moveDirection));
         }
+    }
+
+    Vector3 manageVelocity(Boid boid, Vector3 moveDirection) {
+        float borderW = widthOfArea / 30;
+        float borderH = widthOfArea / 30;
+        Vector3 newVelocity = boid.calcVelocity(moveDirection, boidSpeed);
+        if (newVelocity.x < 0 && boid.transform.position.x + newVelocity.x < -widthOfArea / 2 + borderW || newVelocity.x > 0 && boid.transform.position.x + newVelocity.x > widthOfArea / 2 - borderW) {
+            newVelocity.x = -newVelocity.x;
+        }
+        if (newVelocity.y < 0 && boid.transform.position.y + newVelocity.y < -heightOfArea / 2 + borderH || newVelocity.y > 0 && boid.transform.position.y + newVelocity.y > heightOfArea / 2 - borderH) {
+            newVelocity.y = -newVelocity.y;
+        }
+        return newVelocity;
     }
 
     List<Transform> GetCloseObjects(Boid boid) {

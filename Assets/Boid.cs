@@ -124,8 +124,12 @@ public class Boid : MonoBehaviour {
         boidCollider = GetComponent<Collider2D>();
     }
 
-    public void Move(Vector3 velocity, float speed) {
+    public Vector3 calcVelocity(Vector3 direction, float speed) {
+        return direction * Time.deltaTime * speed;
+    }
+
+    public void Move(Vector3 velocity) {
         transform.up = velocity;
-        transform.position += velocity * Time.deltaTime * speed;
+        transform.position += velocity;
     }
 }
