@@ -12,7 +12,7 @@ public class BoidManager : MonoBehaviour {
     public int amountOfBoids = 10;
     [Space]
     [Header("Boids settings")]
-    [Range(1f, 5f)]
+    [Range(0.5f, 2.5f)]
     public float boidVisionDistance = 5f;
     [Range(0.2f, 1f)]
     public float boidMinimumDistance = 0.4f;
@@ -103,31 +103,58 @@ public class BoidManager : MonoBehaviour {
         Vector3 direction = (boidDirection * 10f + cohesionVelocity + alignementVelocity + separationVelocity).normalized;
         return direction;
     }
+    Vector3 ManageVelocity(Boid boid, Vector3 moveDirection) {
+        Vector3 newVelocity = moveDirection;
 
-    Vector3 manageVelocity(Boid boid, Vector3 moveDirection) {
-        float borderW = widthOfArea / 30;
-        float borderH = widthOfArea / 30;
-        Vector3 newVelocity = boid.calcVelocity(moveDirection, boidSpeed);
-        if (!goThroughtWalls) {
-            if (newVelocity.x < 0 && boid.transform.position.x + newVelocity.x < -widthOfArea / 2 + borderW || newVelocity.x > 0 && boid.transform.position.x + newVelocity.x > widthOfArea / 2 - borderW) {
-                newVelocity.x = -newVelocity.x;
+        newVelocity += AvoidObstacles(boid);
+
+        newVelocity = boid.calcVelocity(newVelocity, boidSpeed);
+        newVelocity = ManageFieldLimit(boid, newVelocity);
+
+        return newVelocity;
+    }
+
+    Vector3 AvoidObstacles(Boid boid) {
+        Vector3 offset = Vector3.zero;
+        int i = 0;
+        bool hitObstacle;
+        do {
+            Vector3 rayDirection = boid.transform.up + new Vector3(Mathf.Cos(Mathf.PI / 10 * i), Mathf.Sin(Mathf.PI / 10 * i));
+            RaycastHit2D hit = Physics2D.Raycast(boid.transform.position, rayDirection, boidVisionDistance);
+            Debug.DrawLine(boid.transform.position, boid.transform.position + rayDirection * boidVisionDistance, Color.green);
+            if (hit.collider != null) {
+                hitObstacle = true;
+                i++;
+            } else {
+                hitObstacle = false;
+                offset = rayDirection;
             }
-            if (newVelocity.y < 0 && boid.transform.position.y + newVelocity.y < -heightOfArea / 2 + borderH || newVelocity.y > 0 && boid.transform.position.y + newVelocity.y > heightOfArea / 2 - borderH) {
-                newVelocity.y = -newVelocity.y;
+        } while (hitObstacle);
+        return offset;
+    }
+
+
+    Vector3 ManageFieldLimit(Boid boid, Vector3 velocity) {
+        if (!goThroughtWalls) {
+            if (velocity.x < 0 && boid.transform.position.x + velocity.x < -widthOfArea / 2 || velocity.x > 0 && boid.transform.position.x + velocity.x > widthOfArea / 2) {
+                velocity.x = -velocity.x;
+            }
+            if (velocity.y < 0 && boid.transform.position.y + velocity.y < -heightOfArea / 2 || velocity.y > 0 && boid.transform.position.y + velocity.y > heightOfArea / 2) {
+                velocity.y = -velocity.y;
             }
         } else {
-            if (newVelocity.x < 0 && boid.transform.position.x + newVelocity.x < -widthOfArea / 2 + borderW) {
-                boid.transform.position = new Vector3(widthOfArea / 2 - borderW, boid.transform.position.y);
-            } else if (newVelocity.x > 0 && boid.transform.position.x + newVelocity.x > widthOfArea / 2 - borderW) {
-                boid.transform.position = new Vector3(-widthOfArea / 2 + borderW, boid.transform.position.y);
+            if (velocity.x < 0 && boid.transform.position.x + velocity.x < -widthOfArea / 2) {
+                boid.transform.position = new Vector3(widthOfArea / 2, boid.transform.position.y);
+            } else if (velocity.x > 0 && boid.transform.position.x + velocity.x > widthOfArea / 2) {
+                boid.transform.position = new Vector3(-widthOfArea / 2, boid.transform.position.y);
             }
-            if (newVelocity.y < 0 && boid.transform.position.y + newVelocity.y < -heightOfArea / 2 + borderH) {
-                boid.transform.position = new Vector3(boid.transform.position.x, heightOfArea / 2 - borderH);
-            } else if (newVelocity.y > 0 && boid.transform.position.y + newVelocity.y > heightOfArea / 2 - borderH) {
-                boid.transform.position = new Vector3(boid.transform.position.x, -heightOfArea / 2 + borderH);
+            if (velocity.y < 0 && boid.transform.position.y + velocity.y < -heightOfArea / 2) {
+                boid.transform.position = new Vector3(boid.transform.position.x, heightOfArea / 2);
+            } else if (velocity.y > 0 && boid.transform.position.y + velocity.y > heightOfArea / 2) {
+                boid.transform.position = new Vector3(boid.transform.position.x, -heightOfArea / 2);
             }
         }
-        return newVelocity;
+        return velocity;
     }
 
     List<Transform> GetCloseObjects(Boid boid) {
