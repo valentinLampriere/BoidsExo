@@ -247,9 +247,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 358d79b5ada7f80469dd4fb840907511, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  widthOfArea: 21.4
-  heightOfArea: 9.8
-  amountOfBoids: 1
+  widthOfArea: 20
+  heightOfArea: 10
+  amountOfBoids: 200
   boidVisionDistance: 1.75
   boidMinimumDistance: 0.33
   goThroughtWalls: 0
@@ -258,6 +258,4 @@ MonoBehaviour:
   alignementStrength: 0.02
   boidSpeed: 1.87
   boid_gameObject: {fileID: 3920269279056475266, guid: 212b7ba58cb88cf4896017060a310807,
-    type: 3}
-  obstacle_gameObject: {fileID: 675446093606170958, guid: 8aa6ad53152cfa040848c8b44b290603,
     type: 3}

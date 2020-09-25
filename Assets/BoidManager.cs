@@ -1,14 +1,13 @@
 ﻿using System.Collections;
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class BoidManager : MonoBehaviour {
     [Header("Field settings")]
-    [Range(5f, 21.4f)]
-    public float widthOfArea = 21.4f;
-    [Range(3.3f, 9.8f)]
-    public float heightOfArea = 9.8f;
+    [Range(5f, 20f)]
+    public float widthOfArea = 20;
+    [Range(3.3f, 10f)]
+    public float heightOfArea = 10;
     [Range(1, 250)]
     public int amountOfBoids = 10;
     [Space]
@@ -31,18 +30,15 @@ public class BoidManager : MonoBehaviour {
     public float boidSpeed = 0.5f;
 
     public GameObject boid_gameObject;
-    public GameObject obstacle_gameObject;
 
     List<Boid> allBoids = new List<Boid>();
-    List<Collider2D> allObstacles = new List<Collider2D>();
 
     // Start is called before the first frame update
     void Start() {
         for (int i = 0; i < amountOfBoids; i++) {
             // Spawn a boid
-            GameObject objBoid = Instantiate(boid_gameObject, UnityEngine.Random.insideUnitCircle * Mathf.Min(widthOfArea, heightOfArea) * 0.5f, Quaternion.Euler(Vector3.forward * UnityEngine.Random.Range(0f, 360f)), transform);
+            GameObject objBoid = Instantiate(boid_gameObject, Random.insideUnitCircle * Mathf.Min(widthOfArea, heightOfArea) * 0.5f, Quaternion.Euler(Vector3.forward * Random.Range(0f, 360f)), transform);
             Boid b = objBoid.GetComponent<Boid>();
-            b.tag = "Boid";
             objBoid.name = "Boid " + i;
             if (b != null) {
                 allBoids.Add(b);
@@ -92,88 +88,56 @@ public class BoidManager : MonoBehaviour {
     void Update() {
         foreach(Boid boid in allBoids) {
             List<Transform> closeBoids = GetCloseObjects(boid);
-            //List<Transform> closeBoids = GetCloseObjects(boid);
 
             Vector3 cohesionVelocity = MoveCohesion(boid, closeBoids);
             Vector3 alignementVelocity = MoveAlignement(boid, closeBoids);
             Vector3 separationVelocity = MoveSeparation(boid, closeBoids);
 
-            Vector3 moveDirection = MergeVelocities(boid.transform.up, cohesionVelocity, alignementVelocity, separationVelocity);
+            Vector3 moveDirection = mergeVelocities(boid.transform.up, cohesionVelocity, alignementVelocity, separationVelocity);
             
-            boid.Move(ManageVelocity(boid, moveDirection));
-        }
-
-        // Spawn obstacles on click
-        if (Input.GetButtonDown("Fire1")) {
-            Vector3 objectPosition;
-            Vector3 mousePos = Input.mousePosition;
-            objectPosition = Camera.main.ScreenToWorldPoint(mousePos);
-            objectPosition.z = 0;
-            GameObject o = Instantiate(obstacle_gameObject, objectPosition, Quaternion.identity);
-            o.tag = "Obstacle";
-            allObstacles.Add(o.GetComponent<Collider2D>());
+            boid.Move(manageVelocity(boid, moveDirection));
         }
     }
 
-    Vector3 MergeVelocities(Vector3 boidDirection, Vector3 cohesionVelocity, Vector3 alignementVelocity, Vector3 separationVelocity) {
+    Vector3 mergeVelocities(Vector3 boidDirection, Vector3 cohesionVelocity, Vector3 alignementVelocity, Vector3 separationVelocity) {
         Vector3 direction = (boidDirection * 10f + cohesionVelocity + alignementVelocity + separationVelocity).normalized;
         return direction;
     }
 
-    Vector3 ManageVelocity(Boid boid, Vector3 moveDirection) {
-        Vector3 newVelocity = boid.calcVelocity(moveDirection, boidSpeed);
-
-        newVelocity = ManageFieldLimit(boid, moveDirection);
-
-        newVelocity += AvoidObstacles(boid, moveDirection);
-
-        return newVelocity;
-    }
-
-    Vector3 AvoidObstacles(Boid boid, Vector3 moveDirection) {
-        Vector3 offset = Vector3.zero;
-        CircleCollider2D boidCollider = boid.GetComponent<CircleCollider2D>();
-
-        RaycastHit2D hit = Physics2D.Raycast(boid.transform.position + boid.transform.up * boidCollider.radius, boid.transform.up);
-        if (hit.collider != null && hit.distance <= boidVisionDistance && hit.collider.gameObject.CompareTag("Obstacle")) {
-            return Vector3.right;
-        }
-        return offset;
-    }
-
-
-    Vector3 ManageFieldLimit(Boid boid, Vector3 moveDirection) {
+    Vector3 manageVelocity(Boid boid, Vector3 moveDirection) {
+        float borderW = widthOfArea / 30;
+        float borderH = widthOfArea / 30;
         Vector3 newVelocity = boid.calcVelocity(moveDirection, boidSpeed);
         if (!goThroughtWalls) {
-            if (newVelocity.x < 0 && boid.transform.position.x + newVelocity.x < -widthOfArea / 2 || newVelocity.x > 0 && boid.transform.position.x + newVelocity.x > widthOfArea / 2) {
+            if (newVelocity.x < 0 && boid.transform.position.x + newVelocity.x < -widthOfArea / 2 + borderW || newVelocity.x > 0 && boid.transform.position.x + newVelocity.x > widthOfArea / 2 - borderW) {
                 newVelocity.x = -newVelocity.x;
             }
-            if (newVelocity.y < 0 && boid.transform.position.y + newVelocity.y < -heightOfArea / 2 || newVelocity.y > 0 && boid.transform.position.y + newVelocity.y > heightOfArea / 2) {
+            if (newVelocity.y < 0 && boid.transform.position.y + newVelocity.y < -heightOfArea / 2 + borderH || newVelocity.y > 0 && boid.transform.position.y + newVelocity.y > heightOfArea / 2 - borderH) {
                 newVelocity.y = -newVelocity.y;
             }
         } else {
-            if (newVelocity.x < 0 && boid.transform.position.x + newVelocity.x < -widthOfArea / 2) {
-                boid.transform.position = new Vector3(widthOfArea / 2, boid.transform.position.y);
-            } else if (newVelocity.x > 0 && boid.transform.position.x + newVelocity.x > widthOfArea / 2) {
-                boid.transform.position = new Vector3(-widthOfArea / 2, boid.transform.position.y);
+            if (newVelocity.x < 0 && boid.transform.position.x + newVelocity.x < -widthOfArea / 2 + borderW) {
+                boid.transform.position = new Vector3(widthOfArea / 2 - borderW, boid.transform.position.y);
+            } else if (newVelocity.x > 0 && boid.transform.position.x + newVelocity.x > widthOfArea / 2 - borderW) {
+                boid.transform.position = new Vector3(-widthOfArea / 2 + borderW, boid.transform.position.y);
             }
-            if (newVelocity.y < 0 && boid.transform.position.y + newVelocity.y < -heightOfArea / 2) {
-                boid.transform.position = new Vector3(boid.transform.position.x, heightOfArea / 2);
-            } else if (newVelocity.y > 0 && boid.transform.position.y + newVelocity.y > heightOfArea / 2) {
-                boid.transform.position = new Vector3(boid.transform.position.x, -heightOfArea / 2);
+            if (newVelocity.y < 0 && boid.transform.position.y + newVelocity.y < -heightOfArea / 2 + borderH) {
+                boid.transform.position = new Vector3(boid.transform.position.x, heightOfArea / 2 - borderH);
+            } else if (newVelocity.y > 0 && boid.transform.position.y + newVelocity.y > heightOfArea / 2 - borderH) {
+                boid.transform.position = new Vector3(boid.transform.position.x, -heightOfArea / 2 + borderH);
             }
         }
         return newVelocity;
     }
 
     List<Transform> GetCloseObjects(Boid boid) {
-        List<Transform> closeBoids = new List<Transform>();
+        List<Transform> context = new List<Transform>();
         Collider2D[] contextColliders = Physics2D.OverlapCircleAll(boid.transform.position, boidVisionDistance);
         foreach (Collider2D c in contextColliders) {
-            if (c != boid.boidCollider && c.gameObject.CompareTag("Boid")) {
-                closeBoids.Add(c.transform);
+            if (c != boid.boidCollider) {
+                context.Add(c.transform);
             }
         }
-        return closeBoids;
+        return context;
     }
 }
