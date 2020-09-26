@@ -120,50 +120,79 @@ public class BoidManager : MonoBehaviour {
         return direction;
     }
 
+
     Vector3 ManageVelocity(Boid boid, Vector3 moveDirection) {
-        Vector3 newVelocity = boid.calcVelocity(moveDirection, boidSpeed);
+        Vector3 newVelocity = moveDirection;
 
-        newVelocity = ManageFieldLimit(boid, moveDirection);
 
-        newVelocity += AvoidObstacles(boid, moveDirection);
+        newVelocity += AvoidObstacles(boid);
+        newVelocity = boid.calcVelocity(newVelocity, boidSpeed);
+        newVelocity = ManageFieldLimit(boid, newVelocity);
 
         return newVelocity;
     }
 
-    Vector3 AvoidObstacles(Boid boid, Vector3 moveDirection) {
-        Vector3 offset = Vector3.zero;
-        CircleCollider2D boidCollider = boid.GetComponent<CircleCollider2D>();
+    Vector3 AvoidObstacles(Boid boid) {
+        int i = 0;
+        bool leftSide = false;
+        RaycastHit2D hit = Physics2D.Raycast(boid.transform.position, boid.transform.up, boidVisionDistance);
+        Vector3 freeDirection = Vector3.zero;
 
-        RaycastHit2D hit = Physics2D.Raycast(boid.transform.position + boid.transform.up * boidCollider.radius, boid.transform.up);
-        if (hit.collider != null && hit.distance <= boidVisionDistance && hit.collider.gameObject.CompareTag("Obstacle")) {
-            return Vector3.right;
+        freeDirection = IsObstacleInDirection(boid.transform.position, boid.transform.up, i, leftSide);
+        while (freeDirection != Vector3.zero && i < 8) {
+            i++;
+            leftSide = !leftSide;
+            freeDirection = IsObstacleInDirection(boid.transform.position, boid.transform.up, i, leftSide);
         }
-        return offset;
+        Debug.Log(freeDirection);
+        return freeDirection;
     }
 
+    Vector3 IsObstacleInDirection(Vector3 origin, Vector3 direction, int offset = 0, bool leftSide = false) {
+        float cos = Mathf.Cos(Mathf.PI / 8f * offset);
+        float sin = -Mathf.Sin(Mathf.PI / 8f * offset);
+        if (leftSide) {
+            cos = Mathf.Cos(-Mathf.PI / 8f * offset);
+            sin = -Mathf.Sin(-Mathf.PI / 8f * offset);
+        }
 
-    Vector3 ManageFieldLimit(Boid boid, Vector3 moveDirection) {
-        Vector3 newVelocity = boid.calcVelocity(moveDirection, boidSpeed);
+        float dX = direction.x * cos - direction.y * sin;
+        float dY = direction.x * sin + direction.y * cos;
+
+        Vector3 rayDirection = new Vector3(dX, dY);
+        RaycastHit2D hit = Physics2D.Raycast(origin, rayDirection, boidVisionDistance);
+
+
+        if (hit.collider != null) {
+            Debug.DrawLine(origin, origin + direction, Color.red, Time.deltaTime);
+            return rayDirection;
+        } else {
+            Debug.DrawLine(origin, origin + direction, Color.green, Time.deltaTime);
+            return Vector3.zero;
+        }
+    }
+
+    Vector3 ManageFieldLimit(Boid boid, Vector3 velocity) {
         if (!goThroughtWalls) {
-            if (newVelocity.x < 0 && boid.transform.position.x + newVelocity.x < -widthOfArea / 2 || newVelocity.x > 0 && boid.transform.position.x + newVelocity.x > widthOfArea / 2) {
-                newVelocity.x = -newVelocity.x;
+            if (velocity.x < 0 && boid.transform.position.x + velocity.x < -widthOfArea / 2 || velocity.x > 0 && boid.transform.position.x + velocity.x > widthOfArea / 2) {
+                velocity.x = -velocity.x;
             }
-            if (newVelocity.y < 0 && boid.transform.position.y + newVelocity.y < -heightOfArea / 2 || newVelocity.y > 0 && boid.transform.position.y + newVelocity.y > heightOfArea / 2) {
-                newVelocity.y = -newVelocity.y;
+            if (velocity.y < 0 && boid.transform.position.y + velocity.y < -heightOfArea / 2 || velocity.y > 0 && boid.transform.position.y + velocity.y > heightOfArea / 2) {
+                velocity.y = -velocity.y;
             }
         } else {
-            if (newVelocity.x < 0 && boid.transform.position.x + newVelocity.x < -widthOfArea / 2) {
+            if (velocity.x < 0 && boid.transform.position.x + velocity.x < -widthOfArea / 2) {
                 boid.transform.position = new Vector3(widthOfArea / 2, boid.transform.position.y);
-            } else if (newVelocity.x > 0 && boid.transform.position.x + newVelocity.x > widthOfArea / 2) {
+            } else if (velocity.x > 0 && boid.transform.position.x + velocity.x > widthOfArea / 2) {
                 boid.transform.position = new Vector3(-widthOfArea / 2, boid.transform.position.y);
             }
-            if (newVelocity.y < 0 && boid.transform.position.y + newVelocity.y < -heightOfArea / 2) {
+            if (velocity.y < 0 && boid.transform.position.y + velocity.y < -heightOfArea / 2) {
                 boid.transform.position = new Vector3(boid.transform.position.x, heightOfArea / 2);
-            } else if (newVelocity.y > 0 && boid.transform.position.y + newVelocity.y > heightOfArea / 2) {
+            } else if (velocity.y > 0 && boid.transform.position.y + velocity.y > heightOfArea / 2) {
                 boid.transform.position = new Vector3(boid.transform.position.x, -heightOfArea / 2);
             }
         }
-        return newVelocity;
+        return velocity;
     }
 
     List<Transform> GetCloseObjects(Boid boid) {
