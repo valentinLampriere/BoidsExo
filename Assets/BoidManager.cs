@@ -5,8 +5,8 @@ using UnityEngine;
 
 public class BoidManager : MonoBehaviour {
     [Header("Field settings")]
-    [Range(5f, 21.4f)]
-    public float widthOfArea = 21.4f;
+    [Range(5f, 20f)]
+    public float widthOfArea = 20f;
     [Range(3.3f, 9.8f)]
     public float heightOfArea = 9.8f;
     [Range(1, 250)]
@@ -91,7 +91,9 @@ public class BoidManager : MonoBehaviour {
 
     void Update() {
         foreach(Boid boid in allBoids) {
-            List<Transform> closeBoids = GetCloseObjects(boid);
+            List<Transform> closeBoids;
+            List<Transform> closeObjects;
+            GetCloseObjects(boid, out closeBoids, out closeObjects);
             //List<Transform> closeBoids = GetCloseObjects(boid);
 
             Vector3 cohesionVelocity = MoveCohesion(boid, closeBoids);
@@ -100,7 +102,7 @@ public class BoidManager : MonoBehaviour {
 
             Vector3 moveDirection = MergeVelocities(boid.transform.up, cohesionVelocity, alignementVelocity, separationVelocity);
             
-            boid.Move(ManageVelocity(boid, moveDirection));
+            boid.Move(ManageVelocity(boid, moveDirection, closeObjects));
         }
 
         // Spawn obstacles on click
@@ -121,39 +123,42 @@ public class BoidManager : MonoBehaviour {
     }
 
 
-    Vector3 ManageVelocity(Boid boid, Vector3 moveDirection) {
+    Vector3 ManageVelocity(Boid boid, Vector3 moveDirection, List<Transform> closeObjects) {
         Vector3 newVelocity = moveDirection;
 
 
-        newVelocity += AvoidObstacles(boid);
+        newVelocity += AvoidObstacles(boid, closeObjects);
         newVelocity = boid.calcVelocity(newVelocity, boidSpeed);
         newVelocity = ManageFieldLimit(boid, newVelocity);
 
         return newVelocity;
-    }
+    }    
 
-    Vector3 AvoidObstacles(Boid boid) {
-        int i = 0;
-        bool leftSide = false;
-        RaycastHit2D hit = Physics2D.Raycast(boid.transform.position, boid.transform.up, boidVisionDistance);
+    Vector3 AvoidObstacles(Boid boid, List<Transform> closeObjects) {
         Vector3 freeDirection = Vector3.zero;
+        int i = 0;
+        bool checkLeft = false;
 
-        freeDirection = IsObstacleInDirection(boid.transform.position, boid.transform.up, i, leftSide);
-        while (freeDirection != Vector3.zero && i < 8) {
-            i++;
-            leftSide = !leftSide;
-            freeDirection = IsObstacleInDirection(boid.transform.position, boid.transform.up, i, leftSide);
+        RaycastHit2D hit = Physics2D.Raycast(boid.transform.position, boid.transform.up, boidVisionDistance);
+        
+        if (closeObjects.Count == 0 || hit.collider == null)
+            return freeDirection;
+
+        while (IsObstacleInDirection(boid.transform.position, boid.transform.up, i, checkLeft, out freeDirection) && i < 8) {
+            if(checkLeft) i++;
+            checkLeft = !checkLeft;
+            Debug.Log(i);
         }
-        Debug.Log(freeDirection);
+        //Debug.Log(freeDirection);
         return freeDirection;
     }
 
-    Vector3 IsObstacleInDirection(Vector3 origin, Vector3 direction, int offset = 0, bool leftSide = false) {
+    bool IsObstacleInDirection(Vector3 origin, Vector3 direction, int offset, bool checkLeft, out Vector3 freeDirection) {
         float cos = Mathf.Cos(Mathf.PI / 8f * offset);
-        float sin = -Mathf.Sin(Mathf.PI / 8f * offset);
-        if (leftSide) {
+        float sin = Mathf.Sin(Mathf.PI / 8f * offset);
+        if (checkLeft) {
             cos = Mathf.Cos(-Mathf.PI / 8f * offset);
-            sin = -Mathf.Sin(-Mathf.PI / 8f * offset);
+            sin = Mathf.Sin(-Mathf.PI / 8f * offset);
         }
 
         float dX = direction.x * cos - direction.y * sin;
@@ -161,14 +166,14 @@ public class BoidManager : MonoBehaviour {
 
         Vector3 rayDirection = new Vector3(dX, dY);
         RaycastHit2D hit = Physics2D.Raycast(origin, rayDirection, boidVisionDistance);
-
-
         if (hit.collider != null) {
-            Debug.DrawLine(origin, origin + direction, Color.red, Time.deltaTime);
-            return rayDirection;
+            Debug.DrawLine(origin, origin + direction, Color.green);
+            freeDirection = Vector3.zero;
+            return true;
         } else {
-            Debug.DrawLine(origin, origin + direction, Color.green, Time.deltaTime);
-            return Vector3.zero;
+            Debug.DrawLine(origin, origin + direction, Color.red);
+            freeDirection = rayDirection;
+            return false;
         }
     }
 
@@ -195,14 +200,20 @@ public class BoidManager : MonoBehaviour {
         return velocity;
     }
 
-    List<Transform> GetCloseObjects(Boid boid) {
-        List<Transform> closeBoids = new List<Transform>();
+    int GetCloseObjects(Boid boid, out List<Transform> boids, out List<Transform> objects) {
+        boids = new List<Transform>();
+        objects = new List<Transform>();
         Collider2D[] contextColliders = Physics2D.OverlapCircleAll(boid.transform.position, boidVisionDistance);
+        int nb = 0;
         foreach (Collider2D c in contextColliders) {
             if (c != boid.boidCollider && c.gameObject.CompareTag("Boid")) {
-                closeBoids.Add(c.transform);
+                boids.Add(c.transform);
             }
+            if (c != boid.boidCollider && !c.gameObject.CompareTag("Boid")) {
+                objects.Add(c.transform);
+            }
+            nb++;
         }
-        return closeBoids;
+        return nb;
     }
 }
