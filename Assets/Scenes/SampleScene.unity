@@ -249,7 +249,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   widthOfArea: 21.4
   heightOfArea: 9.8
-  amountOfBoids: 1
+  amountOfBoids: 118
   boidVisionDistance: 1.75
   boidMinimumDistance: 0.33
   goThroughtWalls: 0

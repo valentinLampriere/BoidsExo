@@ -101,7 +101,7 @@ public class BoidManager : MonoBehaviour {
             Vector3 separationVelocity = MoveSeparation(boid, closeBoids);
 
             Vector3 moveDirection = MergeVelocities(boid.transform.up, cohesionVelocity, alignementVelocity, separationVelocity);
-            
+
             boid.Move(ManageVelocity(boid, moveDirection, closeObjects));
         }
 
@@ -118,38 +118,35 @@ public class BoidManager : MonoBehaviour {
     }
 
     Vector3 MergeVelocities(Vector3 boidDirection, Vector3 cohesionVelocity, Vector3 alignementVelocity, Vector3 separationVelocity) {
-        Vector3 direction = (boidDirection * 10f + cohesionVelocity + alignementVelocity + separationVelocity).normalized;
+        Vector3 direction = (boidDirection * 8f + cohesionVelocity + alignementVelocity + separationVelocity);
         return direction;
     }
-
 
     Vector3 ManageVelocity(Boid boid, Vector3 moveDirection, List<Transform> closeObjects) {
         Vector3 newVelocity = moveDirection;
 
-
-        newVelocity += AvoidObstacles(boid, closeObjects);
+        newVelocity += AvoidObstacles(boid.transform, closeObjects);
         newVelocity = boid.calcVelocity(newVelocity, boidSpeed);
         newVelocity = ManageFieldLimit(boid, newVelocity);
-
+        //Debug.Log(AvoidObstacles(boid.transform, closeObjects));
         return newVelocity;
     }    
 
-    Vector3 AvoidObstacles(Boid boid, List<Transform> closeObjects) {
-        Vector3 freeDirection = Vector3.zero;
+    Vector3 AvoidObstacles(Transform boidTransform, List<Transform> closeObjects) {
+        Vector3 freeDirection;
         int i = 0;
         bool checkLeft = false;
 
-        RaycastHit2D hit = Physics2D.Raycast(boid.transform.position, boid.transform.up, boidVisionDistance);
-        
-        if (closeObjects.Count == 0 || hit.collider == null)
-            return freeDirection;
+        RaycastHit2D hit = Physics2D.Raycast(boidTransform.position, boidTransform.position + boidTransform.up, boidVisionDistance, LayerMask.GetMask("Obstacles"));
 
-        while (IsObstacleInDirection(boid.transform.position, boid.transform.up, i, checkLeft, out freeDirection) && i < 8) {
+        if (closeObjects.Count == 0 || hit.collider == null)
+            return Vector3.zero;
+
+        while (IsObstacleInDirection(boidTransform.position, boidTransform.position + boidTransform.up, i, checkLeft, out freeDirection) && i < 8) {
             if(checkLeft) i++;
             checkLeft = !checkLeft;
-            Debug.Log(i);
         }
-        //Debug.Log(freeDirection);
+
         return freeDirection;
     }
 
@@ -165,7 +162,7 @@ public class BoidManager : MonoBehaviour {
         float dY = direction.x * sin + direction.y * cos;
 
         Vector3 rayDirection = new Vector3(dX, dY);
-        RaycastHit2D hit = Physics2D.Raycast(origin, rayDirection, boidVisionDistance);
+        RaycastHit2D hit = Physics2D.Raycast(origin, rayDirection, boidVisionDistance, LayerMask.GetMask("Obstacles"));
         if (hit.collider != null) {
             Debug.DrawLine(origin, origin + direction, Color.green);
             freeDirection = Vector3.zero;
