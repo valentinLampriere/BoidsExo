@@ -25,7 +25,7 @@ public class BoidManager : MonoBehaviour {
     public float cohesionStrength = 0.1f;
     [Range(0f, 1f)]
     public float separationStrength = 0.8f;
-    [Range(0f, 0.5f)]
+    [Range(0f, 1f)]
     public float alignementStrength = 0.1f;
     [Range(0.01f, 5.0f)]
     public float boidSpeed = 0.5f;
@@ -75,7 +75,7 @@ public class BoidManager : MonoBehaviour {
         if (numClose > 0) {
             separationVelocity /= numClose;
         }
-        return separationVelocity * separationStrength;
+        return separationVelocity * separationStrength * 2f;
     }
 
     Vector3 MoveAlignement(Boid boid, List<Transform> closeBoids) {
@@ -137,19 +137,20 @@ public class BoidManager : MonoBehaviour {
         int i = 0;
         bool checkLeft = false;
 
-        RaycastHit2D hit = Physics2D.Raycast(boidTransform.position, boidTransform.position + boidTransform.up, boidVisionDistance, LayerMask.GetMask("Obstacles"));
+        RaycastHit2D hit = Physics2D.Raycast(boidTransform.position, boidTransform.up, boidVisionDistance, LayerMask.GetMask("Obstacles"));
 
         if (closeObjects.Count == 0 || hit.collider == null)
             return Vector3.zero;
 
-        while (IsObstacleInDirection(boidTransform.position, boidTransform.position + boidTransform.up, i, checkLeft, out freeDirection) && i < 8) {
-            if(checkLeft) i++;
+        while (IsObstacleInDirection(boidTransform.position, boidTransform.up, i, checkLeft, out freeDirection)) {
+            if (i >= 8)
+                return -boidTransform.up;
+            if (checkLeft) i++;
             checkLeft = !checkLeft;
         }
 
         return freeDirection;
     }
-
     bool IsObstacleInDirection(Vector3 origin, Vector3 direction, int offset, bool checkLeft, out Vector3 freeDirection) {
         float cos = Mathf.Cos(Mathf.PI / 8f * offset);
         float sin = Mathf.Sin(Mathf.PI / 8f * offset);
