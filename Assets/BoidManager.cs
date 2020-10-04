@@ -43,7 +43,7 @@ public class BoidManager : MonoBehaviour {
     void Start() {
         for (int i = 0; i < amountOfBoids; i++) {
             // Spawn a boid
-            GameObject objBoid = Instantiate(boid_gameObject, UnityEngine.Random.insideUnitCircle * Mathf.Min(widthOfArea / 3, heightOfArea / 3), Quaternion.Euler(Vector3.forward * UnityEngine.Random.Range(0f, 360f)), transform);
+            GameObject objBoid = Instantiate(boid_gameObject, UnityEngine.Random.insideUnitCircle * Mathf.Min(widthOfArea / 3, heightOfArea / 3) - new Vector2(5, 0), Quaternion.Euler(Vector3.forward * UnityEngine.Random.Range(0f, 360f)), transform);
             Boid b = objBoid.GetComponent<Boid>();
             b.tag = "Boid";
             objBoid.name = "Boid " + i;
@@ -76,7 +76,7 @@ public class BoidManager : MonoBehaviour {
             RaycastHit2D hit = Physics2D.Raycast(mousePos2D, Vector2.zero);
             if (hit.collider != null) {
                 Boid b = hit.collider.gameObject.GetComponent<Boid>();
-                if(b != null) {
+                if (b != null) {
                     if (activeBoid != null)
                         activeBoid.SetState(Boid.boidState.FLOCKING);
                     activeBoid = b;
@@ -90,6 +90,17 @@ public class BoidManager : MonoBehaviour {
                 if (activeBoid != null)
                     activeBoid.SetState(Boid.boidState.FLOCKING);
                 activeBoid = null;
+            }
+        }
+        if (Input.GetKeyDown(KeyCode.Space)) {
+            if (activeBoid != null) {
+                Collider2D[] closeBoids = Physics2D.OverlapCircleAll(activeBoid.transform.position, boidVisionDistance / 2);
+                foreach (Collider2D c in closeBoids) {
+                    Boid b = c.gameObject.GetComponent<Boid>();
+                    if (b != null && b.name != activeBoid.name) {
+                        b.SetState(Boid.boidState.FIRED);
+                    }
+                }
             }
         }
     }   

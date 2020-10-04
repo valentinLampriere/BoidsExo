@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.VFX;
 
@@ -8,7 +9,8 @@ public class Boid : MonoBehaviour {
 
     public enum boidState {
         FLOCKING,
-        MOVABLE
+        MOVABLE,
+        FIRED
     }
 
     public Collider2D boidCollider;
@@ -41,12 +43,6 @@ public class Boid : MonoBehaviour {
         foreach (Transform _boid in closeBoids) {
             cohesionVelocity += _boid.position;
         }
-
-        if (manager.activeBoid != null) {
-            Vector3 target = manager.activeBoid.transform.position;
-            cohesionVelocity += target - cohesionVelocity;
-        }
-
         cohesionVelocity /= closeBoids.Count;
         cohesionVelocity -= transform.position;
         return cohesionVelocity * manager.cohesionStrength;
@@ -83,16 +79,6 @@ public class Boid : MonoBehaviour {
         return direction;
     }
 
-    /*Vector3 ManageVelocity(Vector3 moveDirection, List<Transform> closeObjects) {
-        Vector3 newVelocity = moveDirection;
-
-        newVelocity += AvoidObstacles(closeObjects);
-        newVelocity = calcVelocity(newVelocity, manager.boidSpeed);
-        newVelocity = ManageFieldLimit(newVelocity);
-
-        return newVelocity;
-    }*/
-
     Vector3 AvoidObstacles(List<Transform> closeObjects) {
         Vector3 freeDirection;
         int i = 0;
@@ -114,18 +100,18 @@ public class Boid : MonoBehaviour {
     }
     Vector3 ManageFieldLimit(Vector3 velocity) {
         if (!manager.goThroughtWalls) {
-            if (velocity.x < 0 && transform.position.x + velocity.x < -manager.widthOfArea / 2 || velocity.x > 0 && transform.position.x + velocity.x > manager.widthOfArea / 2) {
+            if (velocity.x < 0 && transform.position.x + velocity.x < -manager.widthOfArea / 2 - 5 || velocity.x > 0 && transform.position.x + velocity.x > manager.widthOfArea / 2 - 5) {
                 velocity.x = -velocity.x;
             }
             if (velocity.y < 0 && transform.position.y + velocity.y < -manager.heightOfArea / 2 || velocity.y > 0 && transform.position.y + velocity.y > manager.heightOfArea / 2) {
                 velocity.y = -velocity.y;
             }
         } else {
-            if (velocity.x < 0 && transform.position.x + velocity.x < -manager.widthOfArea / 2) {
-                transform.position = new Vector3(manager.widthOfArea / 2, transform.position.y);
+            if (velocity.x < 0 && transform.position.x + velocity.x < -manager.widthOfArea / 2 - 5) {
+                transform.position = new Vector3(manager.widthOfArea / 2 - 5, transform.position.y);
             }
-            else if (velocity.x > 0 && transform.position.x + velocity.x > manager.widthOfArea / 2) {
-                transform.position = new Vector3(-manager.widthOfArea / 2, transform.position.y);
+            else if (velocity.x > 0 && transform.position.x + velocity.x > manager.widthOfArea / 2 - 5) {
+                transform.position = new Vector3(-manager.widthOfArea / 2 - 5, transform.position.y);
             }
             if (velocity.y < 0 && transform.position.y + velocity.y < -manager.heightOfArea / 2) {
                 transform.position = new Vector3(transform.position.x, manager.heightOfArea / 2);
@@ -158,9 +144,14 @@ public class Boid : MonoBehaviour {
         return true;
     }
 
+    private bool IsCloseActiveBoid(Boid b) {
+        return manager.activeBoid != null && Vector3.Distance(manager.activeBoid.transform.position, b.transform.position) * 2<= manager.boidVisionDistance && b.name != manager.activeBoid.name;
+    }
+
     public void Move() {
         List<Transform> closeBoids;
         List<Transform> closeObjects;
+        Vector3 velocity;
         manager.GetCloseObjects(this, out closeBoids, out closeObjects);
 
         Vector3 cohesionVelocity = MoveCohesion(closeBoids);
@@ -168,28 +159,32 @@ public class Boid : MonoBehaviour {
         Vector3 separationVelocity = MoveSeparation(closeBoids);
 
         Vector3 moveDirection = MergeVelocities(cohesionVelocity, alignementVelocity, separationVelocity);
-        Vector3 velocity = moveDirection * manager.boidSpeed * Time.fixedDeltaTime;
+
+        velocity = moveDirection;
+
+
         velocity += AvoidObstacles(closeObjects);
-        
-        //Vector3 velocity = ManageVelocity(moveDirection, closeObjects);
-        velocity = ManageFieldLimit(velocity);
 
-        transform.up = velocity;
+        velocity = ManageFieldLimit(velocity * manager.boidSpeed * Time.fixedDeltaTime);
 
-        //rb.MovePosition(transform.position + velocity);
 
+        if (IsCloseActiveBoid(this)) {
+            transform.up = manager.activeBoid.transform.up;
+        } else
+            transform.up = velocity;
         transform.position += velocity;
     }
 
     public void MoveToCursor() {
         Vector3 cursorPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        //Vector3 direction = (cursorPosition - transform.position);
 
-        Vector3 direction = Vector3.MoveTowards(transform.position, new Vector3(cursorPosition.x, cursorPosition.y, 0), Time.deltaTime);
-        transform.up = new Vector3((direction - transform.position).x, (direction - transform.position).y, 0);
-        rb.MovePosition(Vector3.MoveTowards(transform.position, direction, Time.deltaTime));
+        rb.MovePosition(Vector3.MoveTowards(transform.position, new Vector3(cursorPosition.x, cursorPosition.y, 0), manager.boidSpeed * 8 * Time.fixedDeltaTime));
+        transform.up = new Vector3(cursorPosition.x, cursorPosition.y, 0) - transform.position;
+    }
 
-        //transform.position += new Vector3(direction.x, direction.y, 0);
+    public void MoveAhead() {
+        rb.AddForce(transform.up * 6);
+        //transform.position += transform.up;
     }
 
     public void FixedUpdate() {
@@ -197,6 +192,8 @@ public class Boid : MonoBehaviour {
             Move();
         } else if (state == boidState.MOVABLE) {
             MoveToCursor();
+        } else if (state == boidState.FIRED) {
+            MoveAhead();
         }
     }
 
