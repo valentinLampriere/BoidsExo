@@ -27,7 +27,7 @@ public class BoidManager : MonoBehaviour {
     public float separationStrength = 0.8f;
     [Range(0f, 1f)]
     public float alignementStrength = 0.1f;
-    [Range(0.01f, 5.0f)]
+    [Range(0.03f, 2f)]
     public float boidSpeed = 0.5f;
 
     public GameObject boid_gameObject;
@@ -36,13 +36,14 @@ public class BoidManager : MonoBehaviour {
     List<Boid> allBoids = new List<Boid>();
     List<Collider2D> allObstacles = new List<Collider2D>();
 
-    private Boid activeBoid;
+    [HideInInspector]
+    public Boid activeBoid;
 
     // Start is called before the first frame update
     void Start() {
         for (int i = 0; i < amountOfBoids; i++) {
             // Spawn a boid
-            GameObject objBoid = Instantiate(boid_gameObject, UnityEngine.Random.insideUnitCircle * Mathf.Min(widthOfArea, heightOfArea) * 0.5f, Quaternion.Euler(Vector3.forward * UnityEngine.Random.Range(0f, 360f)), transform);
+            GameObject objBoid = Instantiate(boid_gameObject, UnityEngine.Random.insideUnitCircle * Mathf.Min(widthOfArea / 3, heightOfArea / 3), Quaternion.Euler(Vector3.forward * UnityEngine.Random.Range(0f, 360f)), transform);
             Boid b = objBoid.GetComponent<Boid>();
             b.tag = "Boid";
             objBoid.name = "Boid " + i;
@@ -54,23 +55,9 @@ public class BoidManager : MonoBehaviour {
     }
 
     void Update() {
-        /*foreach(Boid boid in allBoids) {
-            List<Transform> closeBoids;
-            List<Transform> closeObjects;
-            GetCloseObjects(boid, out closeBoids, out closeObjects);
-            //List<Transform> closeBoids = GetCloseObjects(boid);
-
-            Vector3 cohesionVelocity = MoveCohesion(boid, closeBoids);
-            Vector3 alignementVelocity = MoveAlignement(boid, closeBoids);
-            Vector3 separationVelocity = MoveSeparation(boid, closeBoids);
-
-            Vector3 moveDirection = MergeVelocities(boid.transform.up, cohesionVelocity, alignementVelocity, separationVelocity);
-
-            boid.Move(ManageVelocity(boid, moveDirection, closeObjects));
-        }*/
 
         // Spawn obstacles on click
-        if (Input.GetButtonDown("Fire1")) {
+        if (Input.GetButtonDown("Fire2")) {
             Vector3 objectPosition;
             Vector3 mousePos = Input.mousePosition;
             objectPosition = Camera.main.ScreenToWorldPoint(mousePos);
@@ -80,14 +67,29 @@ public class BoidManager : MonoBehaviour {
             allObstacles.Add(o.GetComponent<Collider2D>());
         }
 
+
         // Player input
         if (Input.GetMouseButtonDown(0)) {
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
-            if (Physics.Raycast(ray, out hit)) {
+            Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            Vector2 mousePos2D = new Vector2(mousePos.x, mousePos.y);
+
+            RaycastHit2D hit = Physics2D.Raycast(mousePos2D, Vector2.zero);
+            if (hit.collider != null) {
                 Boid b = hit.collider.gameObject.GetComponent<Boid>();
-                if (b != null)
+                if(b != null) {
+                    if (activeBoid != null)
+                        activeBoid.SetState(Boid.boidState.FLOCKING);
                     activeBoid = b;
+                    b.SetState(Boid.boidState.MOVABLE);
+                } else {
+                    if (activeBoid != null)
+                        activeBoid.SetState(Boid.boidState.FLOCKING);
+                    activeBoid = null;
+                }
+            } else {
+                if (activeBoid != null)
+                    activeBoid.SetState(Boid.boidState.FLOCKING);
+                activeBoid = null;
             }
         }
     }   
@@ -101,7 +103,7 @@ public class BoidManager : MonoBehaviour {
             if (c != boid.boidCollider && c.gameObject.CompareTag("Boid")) {
                 boids.Add(c.transform);
             }
-            if (c != boid.boidCollider && !c.gameObject.CompareTag("Boid")) {
+            if (c != boid.boidCollider && c.gameObject.CompareTag("Obstacle")) {
                 objects.Add(c.transform);
             }
             nb++;
