@@ -16,7 +16,7 @@ public class holeBehaviour : MonoBehaviour
             velocity.y = -velocity.y;
         transform.position += velocity * Time.fixedDeltaTime;
         foreach(GameObject g in GameObject.FindGameObjectsWithTag("Ball")) {
-            if(Vector3.Distance(transform.position, g.transform.position) < 0.5f) {
+            if(Vector3.Distance(transform.position, g.transform.position) < 0.75f) {
                 Destroy(g);
             }
         }
